@@ -13,7 +13,7 @@ const (
 	userCtx             = "user_id"
 )
 
-func AuthMiddleware(tokenManager auth.TokenManager) gin.HandlerFunc {
+func AuthMiddleware(authClient *auth.GrpcAuthClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader(authorizationHeader)
 		if header == "" {
@@ -32,7 +32,7 @@ func AuthMiddleware(tokenManager auth.TokenManager) gin.HandlerFunc {
 			return
 		}
 
-		userID, err := tokenManager.ValidateAccessToken(headerParts[1])
+		userID, err := authClient.ValidateToken(headerParts[1])
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "Неверный access токен",

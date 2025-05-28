@@ -11,6 +11,7 @@ type Config struct {
 	DB   DBConfig
 	HTTP HTTPConfig
 	JWT  JWTConfig
+	Auth AuthConfig
 }
 
 type DBConfig struct {
@@ -27,6 +28,10 @@ type HTTPConfig struct {
 
 type JWTConfig struct {
 	SecretKey string
+}
+
+type AuthConfig struct {
+	GrpcAddress string
 }
 
 func LoadConfig() (*Config, error) {
@@ -48,6 +53,9 @@ func LoadConfig() (*Config, error) {
 		},
 		JWT: JWTConfig{
 			SecretKey: getEnv("JWT_SECRET", "your-secret-key"),
+		},
+		Auth: AuthConfig{
+			GrpcAddress: getEnv("AUTH_GRPC_ADDRESS", "localhost:50051"),
 		},
 	}, nil
 }

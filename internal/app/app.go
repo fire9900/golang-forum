@@ -15,22 +15,22 @@ import (
 
 // App представляет собой структуру приложения
 type App struct {
-	cfg          *config.Config
-	router       *gin.Engine
-	tokenManager auth.TokenManager
+	cfg        *config.Config
+	router     *gin.Engine
+	authClient *auth.GrpcAuthClient
 }
 
 // New создает новый экземпляр приложения
 func New(cfg *config.Config) (*App, error) {
-	tokenManager, err := auth.NewManager(cfg.JWT.SecretKey)
+	authClient, err := auth.NewGrpcAuthClient(cfg.Auth.GrpcAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	return &App{
-		cfg:          cfg,
-		router:       gin.Default(),
-		tokenManager: tokenManager,
+		cfg:        cfg,
+		router:     gin.Default(),
+		authClient: authClient,
 	}, nil
 }
 
@@ -57,7 +57,7 @@ func (a *App) Run() error {
 	postService := service.NewPostService(postRepo)
 
 	// Инициализация обработчиков
-	userController := controllers.NewUserController(userService, a.tokenManager)
+	userController := controllers.NewUserController(userService)
 	postController := controllers.NewPostController(postService)
 
 	// Настройка маршрутов
@@ -79,7 +79,7 @@ func (a *App) setupRoutes(userController *controllers.UserController, postContro
 
 		// Защищенные маршруты
 		authorized := api.Group("/")
-		authorized.Use(middleware.AuthMiddleware(a.tokenManager))
+		authorized.Use(middleware.AuthMiddleware(a.authClient))
 		{
 			// Профиль пользователя
 			authorized.GET("/profile", userController.GetProfile)
