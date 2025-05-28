@@ -2,7 +2,9 @@ package repository
 
 import (
 	"database/sql"
-	"forum/internal/model"
+	"fmt"
+
+	"github.com/fire9900/golang-forum/internal/model"
 )
 
 type UserRepository struct {
@@ -51,6 +53,26 @@ func (r *UserRepository) GetByID(id int64) (*model.User, error) {
 	return user, nil
 }
 
+func (r *UserRepository) GetByUsername(username string) (*model.User, error) {
+	user := &model.User{}
+	query := `
+		SELECT id, username, email, password, created_at, updated_at
+		FROM users WHERE username = ?
+	`
+	err := r.db.QueryRow(query, username).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.Password,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func (r *UserRepository) GetByEmail(email string) (*model.User, error) {
 	user := &model.User{}
 	query := `
@@ -66,6 +88,7 @@ func (r *UserRepository) GetByEmail(email string) (*model.User, error) {
 		&user.UpdatedAt,
 	)
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 	return user, nil

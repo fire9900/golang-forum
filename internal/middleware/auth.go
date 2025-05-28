@@ -1,12 +1,11 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/fire9900/golang-forum/internal/auth"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
 )
 
 const (
@@ -14,50 +13,35 @@ const (
 	userCtx             = "user_id"
 )
 
-func AuthMiddleware(secretKey string) gin.HandlerFunc {
+func AuthMiddleware(tokenManager auth.TokenManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader(authorizationHeader)
 		if header == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "empty auth header"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Пустой заголовок авторизации"})
 			return
 		}
 
 		headerParts := strings.Split(header, " ")
 		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid auth header"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Неверный формат токена"})
 			return
 		}
 
 		if len(headerParts[1]) == 0 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token is empty"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Токен пуст"})
 			return
 		}
 
-		token, err := jwt.Parse(headerParts[1], func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return []byte(secretKey), nil
-		})
-
+		userID, err := tokenManager.ValidateAccessToken(headerParts[1])
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "Неверный access токен",
+				"code":  "invalid_access_token",
+			})
 			return
 		}
 
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token claims"})
-			return
-		}
-
-		userID, ok := claims["user_id"].(float64)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
-			return
-		}
-
-		c.Set(userCtx, int64(userID))
+		c.Set(userCtx, userID)
 		c.Next()
 	}
 }

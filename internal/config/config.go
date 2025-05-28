@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -31,6 +32,7 @@ type JWTConfig struct {
 func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		// Если .env файл не найден, продолжаем с переменными окружения
+		fmt.Printf("[WARNING] .env file not found: %s\n", err.Error())
 	}
 
 	return &Config{

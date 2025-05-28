@@ -3,11 +3,11 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"forum/internal/config"
+	"github.com/fire9900/golang-forum/internal/config"
 )
 
 func NewMySQLDB(cfg *config.Config) (*sql.DB, error) {
-	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&multiStatements=true", //https://stackoverflow.com/questions/29341590/how-to-parse-time-from-database
 		cfg.DB.Username,
 		cfg.DB.Password,
 		cfg.DB.Host,

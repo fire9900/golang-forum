@@ -1,8 +1,8 @@
 package service
 
 import (
-	"forum/internal/model"
-	"forum/internal/repository"
+	"github.com/fire9900/golang-forum/internal/model"
+	"github.com/fire9900/golang-forum/internal/repository"
 )
 
 type PostService struct {

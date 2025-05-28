@@ -2,7 +2,7 @@ package repository
 
 import (
 	"database/sql"
-	"forum/internal/model"
+	"github.com/fire9900/golang-forum/internal/model"
 )
 
 type PostRepository struct {
