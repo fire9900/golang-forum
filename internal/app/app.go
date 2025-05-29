@@ -49,51 +49,52 @@ func (a *App) Run() error {
 	}
 
 	// Инициализация репозиториев
-	userRepo := repository.NewUserRepository(db)
 	postRepo := repository.NewPostRepository(db)
 
 	// Инициализация сервисов
-	userService := service.NewUserService(userRepo)
 	postService := service.NewPostService(postRepo)
 
 	// Инициализация обработчиков
-	userController := controllers.NewUserController(userService)
+	authController := controllers.NewAuthController(a.authClient)
 	postController := controllers.NewPostController(postService)
 
 	// Настройка маршрутов
-	a.setupRoutes(userController, postController)
+	a.setupRoutes(authController, postController)
 
 	// Запуск сервера
 	return a.router.Run(a.cfg.HTTP.Port)
 }
 
 // setupRoutes настраивает маршруты приложения
-func (a *App) setupRoutes(userController *controllers.UserController, postController *controllers.PostController) {
+func (a *App) setupRoutes(authController *controllers.AuthController, postController *controllers.PostController) {
 	// Группа API
 	api := a.router.Group("/api")
 	{
-		// Публичные маршруты
-		api.POST("/register", userController.Register)
-		api.POST("/login", userController.Login)
-		api.POST("/refresh", userController.RefreshTokens)
+		// Маршруты аутентификации
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", authController.Register)
+			auth.POST("/login", authController.Login)
+			auth.POST("/refresh", authController.RefreshTokens)
+		}
+
+		// Публичные маршруты для постов
+		posts := api.Group("/posts")
+		{
+			posts.GET("/", postController.GetAll)
+			posts.GET("/:id", postController.GetByID)
+		}
 
 		// Защищенные маршруты
 		authorized := api.Group("/")
 		authorized.Use(middleware.AuthMiddleware(a.authClient))
 		{
-			// Профиль пользователя
-			authorized.GET("/profile", userController.GetProfile)
-			authorized.PUT("/profile", userController.UpdateProfile)
-			authorized.PUT("/profile/password", userController.UpdatePassword)
-
-			// Посты
-			posts := authorized.Group("/posts")
+			// Защищенные маршруты для постов
+			authorizedPosts := authorized.Group("/posts")
 			{
-				posts.POST("/", postController.Create)
-				posts.GET("/", postController.GetAll)
-				posts.GET("/:id", postController.GetByID)
-				posts.PUT("/:id", postController.Update)
-				posts.DELETE("/:id", postController.Delete)
+				authorizedPosts.POST("/", postController.Create)
+				authorizedPosts.PUT("/:id", postController.Update)
+				authorizedPosts.DELETE("/:id", postController.Delete)
 			}
 		}
 	}
